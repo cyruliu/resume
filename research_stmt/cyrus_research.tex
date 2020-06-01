@@ -1,0 +1,66 @@
+% ---
+\documentclass{article}
+% \documentclass[format=acmsmall, review=false, screen=true]{acmart}
+% \documentclass[]{llncs}
+
+% Packages
+% ---
+\usepackage{enumerate}
+\usepackage{amsmath} % Advanced math typesetting
+\usepackage[utf8]{inputenc} % Unicode support (Umlauts etc.)
+% \usepackage[ngerman]{babel} % Change hyphenation rules
+\usepackage{hyperref} % Add a link to your document
+\usepackage{graphicx} % Add pictures to your document
+\usepackage{listings} % Source code formatting and highlighting
+\usepackage{csquotes}
+\usepackage[backend=biber]{biblatex} % Use biblatex package
+\addbibresource{biblio.bib}
+\renewcommand\refname{References}
+% Main document
+% ---
+\begin{document}
+% Set up the maketitle command
+\author{Yuandong Cyrus Liu}
+\title{Research Proposal}
+
+\maketitle{} % Generates title
+
+% \tableofcontents{} % Generates table of contents from sections
+    I think our final goal is clear, that we would like to build up a tool chain that can help perform a better static analysis over binaries. I have been translating llvm IR and doing experiements with different binary analysis tools, as well as software verificaiton tools like \emph{CPAchecker} and \emph{Ultimate}. Therefore, I have learned what steps we need to go through, in order to make this tool chain works smoothely. In the course of my experiements and llvm translator programming, I also tried to read related literatures, to understand the existing tools better, I devide the whole static analysis over binaries into following steps, and then I summarize my research ideas that I could make the contirbutions in the future.
+\begin{enumerate}
+    \item
+        Disassemble machine code into assembly instructions.
+    \item
+        Define Intermediate Language (IL) and map instructions to IL and reconstruct control flow graph (CFG).
+    \item
+        Define Abstract domain over the approximated CFG.
+    \item
+        Static analysis/verification algorithms over the defined domain.
+\end{enumerate}
+    The four steps I list above usually are related to each other closely, they are relatively broad topics, lines between them are blurred depend on what kind of strategies the tool use. The experiment I have been doing, we use \emph{IDA Pro} to get our disassembly instructions and control flow graph, then we use \emph{McSema} lift CFG to \emph{LLVM IR}, these cover the first two steps, and then we use \emph{llvm-cbe} decompile the llvm IR to a C like code, so that we hopefully it can
+    connect well to \emph{CPAcheker}. All these tools we are using have their own limitations, which inspire me that my research could focus on \textbf{static analysis and binary}, I list more concrete thoughts as below:
+
+\begin{itemize}
+    \item
+        \textbf{Intermediate Language}, I'm reading the dissertation talking about the details of this paper~\cite{jakstab}, basically the author proposed the whole framework that connect static analysis and binaries, he came up with an intermediate language that helps extract more precise CFG by building up control flow automata upon it, which has a better result than \emph{IDA Pro}, with respect to a moderate size of program. At this point, in my mind, my thought is that, either we can develop
+        new automata upon our own proposed IL, to statically model flat binaries, or we could utilize and modify existing automata, apply them to llvm IR, perform verification for binaries. While lifting binaries has many challenges itself, different levels of approximation would seriously affect our analysis result, since llvm IR is well known in compiler world, maybe we could focus on llvm programs that lifted from binaries, assumming it's semantics preserved, modeling it as an integer
+        transition system, then we can prove memory safety~\cite{llvm}, termination~\cite{falke}, reachability and other properties for binaries, also we could target specific group of binaries like linux driver or untrusted driver binaries~\cite{kinder2010}.
+
+      \item
+        \textbf{Binary Correctness \& Source Code}, compilers can not always be trusted, to understand what changes it performs during the compilation from source code to binary, instead of studying compiler itself, we could verify how much differences between the binary and its source code. To this end, we could map both of them to our more unified IL. From this IL, we can build up automaton or abstract domain, using formal methods to perform similarity analysis. Therefore, we could prove the correctness of binary by showing the equivalence between the binary and its source code, on the other hand, it would also provide an alternative to show how safe the compiler is.
+
+      \item
+        \textbf{CFG Improvement}, \emph{McSema} lifts binaries to \emph{LLVM IR}, relies on CFG from \emph{IDA Pro}, while the control flow graph constructed by which is limited, the Jakstab~\cite{jakstab} framework proposed a better CFG reconstruction algorithm, with respect to the precision of abstract domain (lattice, trace control flow automaton) with assumptions, since we are using different IL, we could come up with a better algorithm to get a better CFG in our context.
+
+      \item
+        \textbf{Abstract Domain}, in order to correctly approximate the binary and perform different static analysis algorithms, we need to have a sound defined abstract domain, which can correctly and precisely simulates the memory model, regarding to its architecture that the binary has been compiled to. The abstract domain would abstract out our binary, which is in the representation of our defined intermediate language, right now we are experimenting with LLVM IR. This would enable us perform more flexible, configurable program analysis for binaries.
+
+      \item
+        \textbf{Decompilation Improvement}, \emph{llvm-cbe} lifts \emph{LLVM IR} to C like code in a very conservative way, which maps IR to C statements, it preserves many llvm syntax and create many C functions to simulate llvm arithmetic operations, which is too bloating and redudant. While \emph{Snowman}, based on many assumptions, lifting binaries to more human readable c/c++ like code, its correctness is very limited to simple binaries. These two decompilation strategies are more like two extreme scenarios. While we want to make some trade-offs between precise and complexity of decompiling, we could construct cfa from these different versions of decompliation, then apply formal methods to analysis their relation, verify correctness of different version of modified programs, find a decompilation between them, which would preserves the semantics as we need, while decrease the workload of decompiling.
+
+      \item
+        \textbf{Transformed relations between binaries}, patched version of the binary, verify how well it patched? Most likely, once we have a sound defined abstract domain, which abstract out our defined IL, because we can always map binaries to this unified IL, all the issues that we have been discussing in terms of source code analysis can be explored again in binaries.
+\end{itemize}
+
+\printbibliography[title=References]
+\end{document}
